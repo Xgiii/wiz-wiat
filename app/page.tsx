@@ -34,6 +34,12 @@ export default function Home() {
           onElementPlaced={() => setSelectedType(null)}
           onClearSelection={() => setSelectedType(null)}
         />
+        {/* Mobile info banner */}
+        <div className={styles.mobileInfo}>
+          <span className={styles.mobileInfoIcon}>📱</span>
+          <p>Obróć palcem, aby zobaczyć wiatę z każdej strony</p>
+          <p className={styles.mobileInfoSubtext}>Konfiguracja dostępna na komputerze</p>
+        </div>
       </main>
     </div>
   );

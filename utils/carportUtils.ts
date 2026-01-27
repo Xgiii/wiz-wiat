@@ -8,9 +8,7 @@ export const getStructuralPosts = (config: CarportConfig): CustomPost[] => {
 
   const posts: CustomPost[] = [];
 
-  // Base Corner Posts (Always present, but their positions might shift if they become inner posts?)
-  // Actually, let's define them based on the bounding box of the whole carport first.
-  
+  // Base Corner Posts (Always present)
   // 1. Front Left (Outer)
   posts.push({ id: 'static-fl', x: -halfWidth + postOffset, z: halfDepth - postOffset });
   
@@ -29,6 +27,44 @@ export const getStructuralPosts = (config: CarportConfig): CustomPost[] => {
     posts.push({ id: 'static-fm', x: 0, z: halfDepth - postOffset });
     // Back Middle post
     posts.push({ id: 'static-bm', x: 0, z: -halfDepth + postOffset });
+  }
+
+  // For depth >= 6m: Add side posts on USER LEFT (+Z) and USER RIGHT (-Z)
+  // Plus one back post (USER BACK = -X center)
+  // User perspective: standing at +X looking at -X
+  if (depth >= 6) {
+    const thirdWidth = width / 3;
+    
+    // USER LEFT side (+Z = System Front) - 2 additional posts along X axis
+    posts.push({ 
+      id: 'static-lm1', 
+      x: -halfWidth + thirdWidth + postOffset, 
+      z: halfDepth - postOffset 
+    });
+    posts.push({ 
+      id: 'static-lm2', 
+      x: halfWidth - thirdWidth - postOffset, 
+      z: halfDepth - postOffset 
+    });
+    
+    // USER RIGHT side (-Z = System Back) - 2 additional posts along X axis
+    posts.push({ 
+      id: 'static-rm1', 
+      x: -halfWidth + thirdWidth + postOffset, 
+      z: -halfDepth + postOffset 
+    });
+    posts.push({ 
+      id: 'static-rm2', 
+      x: halfWidth - thirdWidth - postOffset, 
+      z: -halfDepth + postOffset 
+    });
+    
+    // USER BACK middle post (-X = System Left, center of depth)
+    posts.push({ 
+      id: 'static-back-mid', 
+      x: -halfWidth + postOffset, 
+      z: 0 
+    });
   }
 
   if (!storageRoom.enabled) {

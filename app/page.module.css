@@ -39,3 +39,49 @@
     transform: rotate(360deg);
   }
 }
+
+/* Mobile info banner - domyślnie ukryty */
+.mobileInfo {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 47, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    padding: 16px 24px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    z-index: 100;
+  }
+
+  .mobileInfoIcon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .mobileInfo p {
+    margin: 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .mobileInfoSubtext {
+    color: #a0a0c0 !important;
+    font-size: 0.8rem !important;
+    font-weight: 400 !important;
+    margin-top: 6px !important;
+  }
+}

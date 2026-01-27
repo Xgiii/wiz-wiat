@@ -190,11 +190,52 @@ export default function Carport({ config, onDragStart, onDragEnd, selectedType, 
         <meshStandardMaterial color={color} metalness={0.7} roughness={0.35} />
       </mesh>
 
-      {/* Roof beams - running horizontally (front to back along Z) */}
-      {Array.from({ length: Math.max(1, Math.floor(width / 1.0) - 1) }).map((_, i, arr) => {
-         const xPos = -halfWidth + (width / (arr.length + 1)) * (i + 1);
-         return <Beam key={`rb-${i}`} position={[xPos, height + 0.15, 0]} length={depth - 0.2} rotation={[0, Math.PI / 2, 0]} color={color} />;
-      })}
+      {/* Roof beams - running horizontally (front to back along Z) between structural posts */}
+      {(() => {
+        // Get unique X positions for beams (between front and back rows of posts)
+        const uniqueXPositions = [...new Set(structuralPosts.map(p => p.x))].sort((a, b) => a - b);
+        
+        // Skip the leftmost and rightmost X positions (those are at the fascia edges)
+        const innerXPositions = uniqueXPositions.slice(1, -1);
+        
+        // Generate beams at each inner X position (post column), spanning between Z posts
+        return innerXPositions.map((xPos, i) => {
+          // For each X position, calculate beam segments between Z posts
+          const postsAtX = structuralPosts
+            .filter(p => Math.abs(p.x - xPos) < 0.1)
+            .sort((a, b) => b.z - a.z); // Sort from front to back
+          
+          if (postsAtX.length < 2) {
+            // If only one post at this X, span full depth (but shortened for fascia)
+            return (
+              <Beam 
+                key={`rb-${i}`} 
+                position={[xPos, height + 0.15, 0]} 
+                length={depth - 0.3} 
+                rotation={[0, Math.PI / 2, 0]} 
+                color={color} 
+              />
+            );
+          }
+          
+          // Create beam segments between consecutive posts
+          return postsAtX.slice(0, -1).map((startPost, segIdx) => {
+            const endPost = postsAtX[segIdx + 1];
+            const segmentLength = Math.abs(startPost.z - endPost.z);
+            const segmentZ = (startPost.z + endPost.z) / 2;
+            
+            return (
+              <Beam 
+                key={`rb-${i}-${segIdx}`} 
+                position={[xPos, height + 0.15, segmentZ]} 
+                length={segmentLength - 0.15} 
+                rotation={[0, Math.PI / 2, 0]} 
+                color={color} 
+              />
+            );
+          });
+        });
+      })()}
       
       {/* Roof with slope towards gutter side */}
       {(() => {

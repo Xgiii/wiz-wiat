@@ -438,3 +438,10 @@
 .switch input:checked + .switchSlider:before {
   transform: translateX(20px);
 }
+
+/* Mobile responsive - ukryj panel na telefonach */
+@media (max-width: 768px) {
+  .panel {
+    display: none;
+  }
+}
