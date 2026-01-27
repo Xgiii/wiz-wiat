@@ -21,17 +21,25 @@ export const getStructuralPosts = (config: CarportConfig): CustomPost[] => {
   // 4. Back Right (Outer)
   posts.push({ id: 'static-br', x: halfWidth - postOffset, z: -halfDepth + postOffset });
 
-  // Add middle posts for wider carports (width >= 5m)
-  if (width >= 5) {
-    // Front Middle post
-    posts.push({ id: 'static-fm', x: 0, z: halfDepth - postOffset });
-    // Back Middle post
-    posts.push({ id: 'static-bm', x: 0, z: -halfDepth + postOffset });
+  // For depth 5m - 5.99m: Add 1 post per side (USER LEFT and USER RIGHT)
+  // User perspective: standing at +X looking at -X
+  if (depth >= 5 && depth < 6) {
+    // USER LEFT side (+Z = System Front) - 1 post in the middle
+    posts.push({ 
+      id: 'static-lm1', 
+      x: 0, 
+      z: halfDepth - postOffset 
+    });
+    
+    // USER RIGHT side (-Z = System Back) - 1 post in the middle
+    posts.push({ 
+      id: 'static-rm1', 
+      x: 0, 
+      z: -halfDepth + postOffset 
+    });
   }
 
-  // For depth >= 6m: Add side posts on USER LEFT (+Z) and USER RIGHT (-Z)
-  // Plus one back post (USER BACK = -X center)
-  // User perspective: standing at +X looking at -X
+  // For depth >= 6m: Add 2 posts per side + 1 back post
   if (depth >= 6) {
     const thirdWidth = width / 3;
     
@@ -60,11 +68,14 @@ export const getStructuralPosts = (config: CarportConfig): CustomPost[] => {
     });
     
     // USER BACK middle post (-X = System Left, center of depth)
-    posts.push({ 
-      id: 'static-back-mid', 
-      x: -halfWidth + postOffset, 
-      z: 0 
-    });
+    // Only add if no storage room is enabled (storage room replaces back wall)
+    if (!storageRoom.enabled) {
+      posts.push({ 
+        id: 'static-back-mid', 
+        x: -halfWidth + postOffset, 
+        z: 0 
+      });
+    }
   }
 
   if (!storageRoom.enabled) {
