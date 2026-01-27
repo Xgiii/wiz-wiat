@@ -1,0 +1,84 @@
+.palette {
+  margin-top: 8px;
+}
+
+.instructions {
+  font-size: 0.75rem;
+  color: #8080a0;
+  margin: 0 0 12px 0;
+  text-align: center;
+  min-height: 2.5em;
+}
+
+.items {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping */
+  gap: 8px; /* Reduce gap slightly */
+  justify-content: center;
+}
+
+.draggableItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px; /* Reduce padding */
+  min-width: 80px; /* Ensure consistent width */
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.draggableItem:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px);
+}
+
+.draggableItem.selected {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: #6366f1;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+}
+
+.itemIcon {
+  font-size: 1.25rem;
+}
+
+.itemLabel {
+  font-size: 0.7rem;
+  color: #c0c0d0;
+  font-weight: 500;
+}
+
+.cancelButton {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #6366f1;
+  text-align: center;
+  margin-top: 8px;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 6px;
+  border-radius: 6px;
+}
