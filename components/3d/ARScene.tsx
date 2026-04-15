@@ -9,10 +9,8 @@ import * as THREE from 'three';
 
 const xrStore = createXRStore({
   offerSession: false,
-  sessionInit: {
-    requiredFeatures: ['hit-test', 'local-floor'],
-    optionalFeatures: ['dom-overlay'],
-  },
+  hitTest: 'required',
+  domOverlay: true,
 });
 
 const matrixHelper = new THREE.Matrix4();
