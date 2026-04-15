@@ -40,48 +40,83 @@
   }
 }
 
-/* Mobile info banner - domyślnie ukryty */
-.mobileInfo {
-  display: none;
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .viewport {
+    height: 50vh;
+    min-height: 350px;
+    flex: none;
+    width: 100vw;
+  }
+}
+
+/* Floating AR Button */
+.floatingArButton {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 
+    0 4px 20px rgba(99, 102, 241, 0.5),
+    0 0 40px rgba(99, 102, 241, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: arPulse 3s ease-in-out infinite;
+}
+
+.floatingArButton:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 8px 32px rgba(99, 102, 241, 0.6),
+    0 0 60px rgba(99, 102, 241, 0.2);
+}
+
+.floatingArButton:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.arIcon {
+  font-size: 1.3rem;
+}
+
+.arLabel {
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+@keyframes arPulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 20px rgba(99, 102, 241, 0.5),
+      0 0 40px rgba(99, 102, 241, 0.15);
+  }
+  50% {
+    box-shadow: 
+      0 4px 28px rgba(99, 102, 241, 0.7),
+      0 0 60px rgba(99, 102, 241, 0.25);
+  }
 }
 
 @media (max-width: 768px) {
-  .mobileInfo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(30, 30, 47, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 16px;
-    padding: 16px 24px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    max-width: 90%;
-    z-index: 100;
-  }
-
-  .mobileInfoIcon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-  }
-
-  .mobileInfo p {
-    margin: 0;
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 500;
-  }
-
-  .mobileInfoSubtext {
-    color: #a0a0c0 !important;
-    font-size: 0.8rem !important;
-    font-weight: 400 !important;
-    margin-top: 6px !important;
+  .floatingArButton {
+    bottom: 16px;
+    right: 16px;
+    padding: 12px 20px;
+    font-size: 0.85rem;
   }
 }

@@ -10,9 +10,11 @@ import DragPalette from './DragPalette';
 interface ConfigPanelProps {
   selectedType: DraggableElementType | null;
   onSelectType: (type: DraggableElementType | null) => void;
+  arSupported?: boolean;
+  onOpenAR?: () => void;
 }
 
-export default function ConfigPanel({ selectedType, onSelectType }: ConfigPanelProps) {
+export default function ConfigPanel({ selectedType, onSelectType, arSupported, onOpenAR }: ConfigPanelProps) {
   const { 
     config, 
     setWidth, 
@@ -314,6 +316,23 @@ export default function ConfigPanel({ selectedType, onSelectType }: ConfigPanelP
           </>
         )}
       </section>
+
+      {/* AR Section */}
+      {arSupported && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>📱 Podgląd AR</h2>
+          <button 
+            className={styles.arButton}
+            onClick={onOpenAR}
+          >
+            <span className={styles.arButtonIcon}>📱</span>
+            <span>
+              <strong>Zobacz w AR</strong>
+              <small className={styles.arButtonSub}>Umieść wiatę w swoim otoczeniu</small>
+            </span>
+          </button>
+        </section>
+      )}
 
       {/* Share & Reset Section */}
       <section className={styles.section}>

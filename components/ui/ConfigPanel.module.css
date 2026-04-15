@@ -439,9 +439,53 @@
   transform: translateX(20px);
 }
 
-/* Mobile responsive - ukryj panel na telefonach */
+/* AR Button */
+.arButton {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.arButton:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.arButton:active {
+  transform: translateY(0);
+}
+
+.arButtonIcon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+}
+
+.arButtonSub {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #a0a0c0;
+  margin-top: 2px;
+}
+
+/* Mobile responsive */
 @media (max-width: 768px) {
   .panel {
-    display: none;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
