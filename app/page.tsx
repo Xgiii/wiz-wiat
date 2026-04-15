@@ -33,13 +33,26 @@ export default function Home() {
   const [selectedType, setSelectedType] = useState<DraggableElementType | null>(null);
   const [showAR, setShowAR] = useState(false);
   const [arSupported, setArSupported] = useState(false);
+  const [arDebugMsg, setArDebugMsg] = useState<string>("Sprawdzanie WebXR...");
 
   useEffect(() => {
     // Check WebXR AR support
     if (typeof navigator !== 'undefined' && 'xr' in navigator) {
       (navigator as any).xr?.isSessionSupported?.('immersive-ar')
-        .then((supported: boolean) => setArSupported(supported))
-        .catch(() => setArSupported(false));
+        .then((supported: boolean) => {
+          setArSupported(supported);
+          if (!supported) setArDebugMsg("WebXR jest, ale tryb 'immersive-ar' nie jest wspierany (Wybierz urządzenie AR w emulatorze lub użyj odpowiedniej apki na iOS)");
+        })
+        .catch((e: any) => {
+          setArSupported(false);
+          setArDebugMsg("Błąd podczas sprawdzania wsparcia AR: " + e.message);
+        });
+    } else {
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.protocol !== 'https:') {
+        setArDebugMsg("Brak WebXR: Brak bezpiecznego kontekstu. Używasz adresu lokalnego IP bez HTTPS. Musisz użyć HTTPS (np. przez Ngrok/localtunnel) lub 'localhost'.");
+      } else {
+        setArDebugMsg("Brak WebXR: Przeglądarka w ogóle nie obsługuje API 'navigator.xr'.");
+      }
     }
   }, []);
 
@@ -54,6 +67,7 @@ export default function Home() {
         selectedType={selectedType} 
         onSelectType={setSelectedType}
         arSupported={arSupported}
+        arDebugMsg={arDebugMsg}
         onOpenAR={() => setShowAR(true)}
       />
       <main className={styles.viewport}>

@@ -11,10 +11,11 @@ interface ConfigPanelProps {
   selectedType: DraggableElementType | null;
   onSelectType: (type: DraggableElementType | null) => void;
   arSupported?: boolean;
+  arDebugMsg?: string;
   onOpenAR?: () => void;
 }
 
-export default function ConfigPanel({ selectedType, onSelectType, arSupported, onOpenAR }: ConfigPanelProps) {
+export default function ConfigPanel({ selectedType, onSelectType, arSupported, arDebugMsg, onOpenAR }: ConfigPanelProps) {
   const { 
     config, 
     setWidth, 
@@ -318,9 +319,9 @@ export default function ConfigPanel({ selectedType, onSelectType, arSupported, o
       </section>
 
       {/* AR Section */}
-      {arSupported && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>📱 Podgląd AR</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>📱 Podgląd AR</h2>
+        {arSupported ? (
           <button 
             className={styles.arButton}
             onClick={onOpenAR}
@@ -331,8 +332,13 @@ export default function ConfigPanel({ selectedType, onSelectType, arSupported, o
               <small className={styles.arButtonSub}>Umieść wiatę w swoim otoczeniu</small>
             </span>
           </button>
-        </section>
-      )}
+        ) : (
+          <div style={{ color: '#ef4444', fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)'}}>
+            <strong>Niedostępne na tym urządzeniu:</strong><br/>
+            {arDebugMsg}
+          </div>
+        )}
+      </section>
 
       {/* Share & Reset Section */}
       <section className={styles.section}>
