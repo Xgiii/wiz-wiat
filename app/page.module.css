@@ -114,7 +114,7 @@
 
 @media (max-width: 768px) {
   .floatingArButton {
-    bottom: 16px;
+    bottom: 100px;
     right: 16px;
     padding: 12px 20px;
     font-size: 0.85rem;

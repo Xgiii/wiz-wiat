@@ -137,7 +137,7 @@ function HitTestReticle({ onPlace }: { onPlace: (position: THREE.Vector3) => voi
 function PlacedCarport({ position }: { position: THREE.Vector3 }) {
   const config = useCarportStore((state) => state.config);
   return (
-    <group position={position} scale={[0.5, 0.5, 0.5]}>
+    <group position={position}>
       <ambientLight intensity={1.2} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <Carport config={config} selectedType={null} />
@@ -145,16 +145,82 @@ function PlacedCarport({ position }: { position: THREE.Vector3 }) {
   );
 }
 
+// ─── Hit Test Reticle for Dragging ──────────────────────────────────────────
+function DragHitTestReticle({ onMove }: { onMove: (position: THREE.Vector3) => void }) {
+  try {
+    useXRHitTest((results, getWorldMatrix) => {
+      try {
+        if (results.length === 0) return;
+        getWorldMatrix(matrixHelper, results[0]);
+        hitPosition.setFromMatrixPosition(matrixHelper);
+        onMove(hitPosition.clone());
+      } catch (e: any) {
+        logError('Drag hit test: ' + e.message);
+      }
+    }, 'viewer');
+  } catch (e: any) {
+    logError('DragHitTestReticle setup: ' + e.message);
+  }
+  return null;
+}
+
 // ─── AR Scene Content (inside XR context) ───────────────────────────────────
 function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: string) => void }) {
   const [placedPosition, setPlacedPosition] = useState<THREE.Vector3 | null>(null);
   const [showPlaceHint, setShowPlaceHint] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handlePlace = useCallback((position: THREE.Vector3) => {
     setPlacedPosition(position);
     setShowPlaceHint(false);
     onLog('Wiata umieszczona na pozycji: ' + position.toArray().map(v => v.toFixed(2)).join(', '));
   }, [onLog]);
+
+  const handleDragMove = useCallback((position: THREE.Vector3) => {
+    if (isDragging) {
+      setPlacedPosition(position);
+    }
+  }, [isDragging]);
+
+  // Touch handlers for drag
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!placedPosition) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    // Start drag after 300ms hold
+    dragTimerRef.current = setTimeout(() => {
+      setIsDragging(true);
+      onLog('Tryb przesuwania aktywny');
+    }, 300);
+  }, [placedPosition, onLog]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+    // If finger moved more than 10px before timer fires, cancel
+    if (!isDragging && (dx > 10 || dy > 10)) {
+      if (dragTimerRef.current) {
+        clearTimeout(dragTimerRef.current);
+        dragTimerRef.current = null;
+      }
+    }
+  }, [isDragging]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dragTimerRef.current) {
+      clearTimeout(dragTimerRef.current);
+      dragTimerRef.current = null;
+    }
+    if (isDragging) {
+      setIsDragging(false);
+      onLog('Wiata przesunięta');
+    }
+    touchStartRef.current = null;
+  }, [isDragging, onLog]);
 
   // Auto-place fallback after 6s
   useEffect(() => {
@@ -177,54 +243,85 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
 
       {!placedPosition && <HitTestReticle onPlace={handlePlace} />}
       {placedPosition && <PlacedCarport position={placedPosition} />}
+      {isDragging && <DragHitTestReticle onMove={handleDragMove} />}
 
       {/* DOM Overlay inside AR session */}
       <IfInSessionMode allow="immersive-ar">
         <XRDomOverlay
           style={{
             position: 'fixed',
-            top: 0, left: 0, right: 0,
+            top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 99999,
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Top bar */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0,
             padding: '16px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
             pointerEvents: 'none',
-          }}
-        >
-          <button
-            onClick={onExitAR}
-            style={{
-              pointerEvents: 'auto',
-              padding: '12px 24px',
-              borderRadius: '14px',
-              border: 'none',
-              background: 'rgba(0, 0, 0, 0.7)',
+          }}>
+            <button
+              onClick={onExitAR}
+              style={{
+                pointerEvents: 'auto',
+                padding: '12px 24px',
+                borderRadius: '14px',
+                border: 'none',
+                background: 'rgba(0, 0, 0, 0.7)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                color: 'white',
+                fontSize: '1rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+              }}
+            >
+              ✕ Zamknij AR
+            </button>
+            <div style={{
+              pointerEvents: 'none',
+              padding: '10px 20px',
+              borderRadius: '12px',
+              background: showPlaceHint ? 'rgba(0,0,0,0.7)' : isDragging ? 'rgba(99,102,241,0.85)' : 'rgba(16,185,129,0.8)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               color: 'white',
-              fontSize: '1rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-            }}
-          >
-            ✕ Zamknij AR
-          </button>
-          <div style={{
-            pointerEvents: 'none',
-            padding: '10px 20px',
-            borderRadius: '12px',
-            background: showPlaceHint ? 'rgba(0,0,0,0.7)' : 'rgba(16,185,129,0.8)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            color: 'white',
-            fontSize: '0.85rem',
-            textAlign: 'center',
-            maxWidth: '220px',
-          }}>
-            {showPlaceHint ? 'Skieruj kamerę na podłogę i dotknij' : '✓ Wiata umieszczona!'}
+              fontSize: '0.85rem',
+              textAlign: 'center',
+              maxWidth: '220px',
+            }}>
+              {showPlaceHint
+                ? 'Skieruj kamerę na podłogę i dotknij'
+                : isDragging
+                  ? '✋ Przesuwanie...'
+                  : '✓ Przytrzymaj wiatę, by przenieść'}
+            </div>
           </div>
+
+          {/* Transparent drag overlay — covers the whole screen to capture touch */}
+          {placedPosition && (
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'auto',
+                // Visual feedback when dragging
+                border: isDragging ? '3px solid rgba(99,102,241,0.6)' : '3px solid transparent',
+                borderRadius: '0px',
+                transition: 'border-color 0.2s',
+                boxSizing: 'border-box',
+              }}
+            />
+          )}
         </XRDomOverlay>
       </IfInSessionMode>
     </>
