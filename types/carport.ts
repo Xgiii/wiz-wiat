@@ -69,7 +69,7 @@ export interface CarportConfig {
   customPanels: CustomPanel[];
 
   // Rotation
-  rotationX: number; // in degrees
+  rotationY: number; // in degrees
 }
 
 // Available colors (RAL colors) - lightened for better visibility
@@ -108,5 +108,5 @@ export const DEFAULT_CONFIG: CarportConfig = {
   },
   customPosts: [],
   customPanels: [],
-  rotationX: 0,
+  rotationY: 0,
 };

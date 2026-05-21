@@ -24,7 +24,7 @@ interface CarportStore {
   updatePanelFeaturePosition: (panelId: string, featureId: string, x: number) => void;
   removePanelFeature: (panelId: string, featureId: string) => void;
   getPostById: (id: string) => CustomPost | undefined;
-  setRotationX: (rotationX: number) => void;
+  setRotationY: (rotationY: number) => void;
   resetConfig: () => void;
   setHydrated: (hydrated: boolean) => void;
 }
@@ -63,8 +63,8 @@ export const useCarportStore = create<CarportStore>()(
     config: { ...state.config, roofType }
   })),
   
-  setRotationX: (rotationX) => set((state) => ({
-    config: { ...state.config, rotationX }
+  setRotationY: (rotationY) => set((state) => ({
+    config: { ...state.config, rotationY }
   })),
   
   setPanel: (side, panel) => set((state) => ({

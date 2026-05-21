@@ -140,7 +140,7 @@ function PlacedCarport({ position }: { position: THREE.Vector3 }) {
     <group position={position}>
       <ambientLight intensity={1.2} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
-      <group rotation={[THREE.MathUtils.degToRad(config.rotationX || 0), 0, 0]}>
+      <group rotation={[0, THREE.MathUtils.degToRad(config.rotationY || 0), 0]}>
         <Carport config={config} selectedType={null} />
       </group>
     </group>
@@ -169,7 +169,7 @@ function DragHitTestReticle({ onMove }: { onMove: (position: THREE.Vector3) => v
 // ─── AR Scene Content (inside XR context) ───────────────────────────────────
 function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: string) => void }) {
   const config = useCarportStore((state) => state.config);
-  const setRotationX = useCarportStore((state) => state.setRotationX);
+  const setRotationY = useCarportStore((state) => state.setRotationY);
 
   const [placedPosition, setPlacedPosition] = useState<THREE.Vector3 | null>(null);
   const [showPlaceHint, setShowPlaceHint] = useState(true);
@@ -269,6 +269,7 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
             justifyContent: 'space-between',
             alignItems: 'flex-start',
             pointerEvents: 'none',
+            zIndex: 100, // Make sure it is above the drag overlay
           }}>
             <button
               onClick={onExitAR}
@@ -319,6 +320,7 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'auto',
+                zIndex: 10, // Rendered below top and bottom overlay components
                 // Visual feedback when dragging
                 border: isDragging ? '3px solid rgba(99,102,241,0.6)' : '3px solid transparent',
                 borderRadius: '0px',
@@ -328,7 +330,7 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
             />
           )}
 
-          {/* Bottom controls panel for X-axis rotation (pitch/tilt) */}
+          {/* Bottom controls panel for Y-axis rotation (yaw/horizontal) */}
           {placedPosition && (
             <div 
               style={{
@@ -360,19 +362,19 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.025em' }}>
-                  📐 Pochylenie wiaty (Oś X)
+                  📐 Obrót wiaty (Poziom)
                 </span>
                 <span style={{ color: '#818cf8', fontSize: '0.85rem', fontWeight: 700 }}>
-                  {config.rotationX || 0}°
+                  {config.rotationY || 0}°
                 </span>
               </div>
               <input
                 type="range"
-                min="-45"
-                max="45"
+                min="-180"
+                max="180"
                 step="1"
-                value={config.rotationX || 0}
-                onChange={(e) => setRotationX(parseInt(e.target.value))}
+                value={config.rotationY || 0}
+                onChange={(e) => setRotationY(parseInt(e.target.value))}
                 style={{
                   width: '100%',
                   height: '6px',
@@ -385,9 +387,9 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
                 }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.7rem' }}>
-                <span>-45°</span>
+                <span>-180°</span>
                 <span>0°</span>
-                <span>+45°</span>
+                <span>+180°</span>
               </div>
             </div>
           )}

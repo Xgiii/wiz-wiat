@@ -61,7 +61,7 @@ function SceneContent({ selectedType, onElementPlaced, setControlsEnabled, onCle
       />
       
       {/* Rotatable Carport group */}
-      <group rotation={[THREE.MathUtils.degToRad(config.rotationX || 0), 0, 0]}>
+      <group rotation={[0, THREE.MathUtils.degToRad(config.rotationY || 0), 0]}>
         {/* Drop zone for click-to-place */}
         <DropZone
           selectedType={selectedType}
