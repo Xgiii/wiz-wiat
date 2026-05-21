@@ -45,6 +45,7 @@ export default function Panel({
   const [hovered, setHovered] = useState(false);
   const [draggingFeatureId, setDraggingFeatureId] = useState<string | null>(null);
   const isDraggingRef = useRef(false);
+  const panelGroupRef = useRef<THREE.Group>(null);
 
   if (panelType === 'none') return null;
   
@@ -109,29 +110,22 @@ export default function Panel({
   };
 
   const handleFeatureDragMove = (e: ThreeEvent<PointerEvent>, featureId: string) => {
-    if (draggingFeatureId !== featureId) return;
+    if (draggingFeatureId !== featureId || !panelGroupRef.current) return;
     
     e.stopPropagation();
     
-    // Create a virtual infinite plane representing the wall surface
-    // The panel faces Z in local space, so normal is (0,0,1) rotated by panel rotation
-    const euler = new THREE.Euler(...rotation);
-    const normal = new THREE.Vector3(0, 0, 1).applyEuler(euler);
-    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-      normal, 
-      new THREE.Vector3(...position)
-    );
+    // Transform ray to the local space of the panel group
+    const localRay = e.ray.clone();
+    localRay.applyMatrix4(panelGroupRef.current.matrixWorld.clone().invert());
     
+    // In local space, the panel lies in the Z=0 plane (faces Z in local space)
+    const localPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const target = new THREE.Vector3();
-    e.ray.intersectPlane(plane, target);
+    localRay.intersectPlane(localPlane, target);
     
     if (target) {
-      // Convert world target point to local panel coordinates
-      const clickVec = new THREE.Vector3().subVectors(target, new THREE.Vector3(...position));
-      clickVec.applyEuler(new THREE.Euler(-euler.x, -euler.y, -euler.z));
-      
       // localX is the position along the wall width
-      const localX = Math.max(-width/2 + 0.5, Math.min(width/2 - 0.5, clickVec.x));
+      const localX = Math.max(-width/2 + 0.5, Math.min(width/2 - 0.5, target.x));
       onUpdateFeaturePosition(id, featureId, localX);
     }
   };
@@ -184,7 +178,7 @@ export default function Panel({
     : new THREE.Color(color).offsetHSL(0, 0, -0.15);
   
   return (
-    <group position={position} rotation={rotation}>
+    <group ref={panelGroupRef} position={position} rotation={rotation}>
       {/* Base Wall */}
       <mesh 
         position={[0, 0, 0]} 

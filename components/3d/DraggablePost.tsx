@@ -73,11 +73,33 @@ export default function DraggablePost({
     onDragStart?.();
   };
   
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
+    if (!isDragging || !meshRef.current) return;
+    e.stopPropagation();
+    
+    // Transform ray to the local coordinate system of the parent group (rotated carport)
+    const localRay = e.ray.clone();
+    const parent = meshRef.current.parent;
+    if (parent) {
+      localRay.applyMatrix4(parent.matrixWorld.clone().invert());
+    }
+    
+    // Intersect with local plane (normal (0,1,0) and constant 0)
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const target = new THREE.Vector3();
+    localRay.intersectPlane(plane, target);
+    
+    if (target) {
+      const constrained = constrainToPerimeter(target.x, target.z);
+      // Update store in real-time for responsive visual feedback of post and connected panels
+      onPositionChange(id, constrained.x, constrained.z);
+    }
+  };
+
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    if (isDragging && meshRef.current) {
-      const pos = meshRef.current.position;
-      const constrained = constrainToPerimeter(pos.x, pos.z);
+    if (isDragging) {
+      const constrained = constrainToPerimeter(position[0], position[2]);
       const snappedX = snapToGrid(constrained.x);
       const snappedZ = snapToGrid(constrained.z);
       onPositionChange(id, snappedX, snappedZ);
@@ -85,28 +107,6 @@ export default function DraggablePost({
     setIsDragging(false);
     onDragEnd?.();
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-  };
-  
-  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging || !meshRef.current) return;
-    e.stopPropagation();
-    
-    // Use raycaster to find intersection with ground plane (y=0)
-    // This provides stable dragging regardless of where on the post we clicked
-    const raycaster = e.ray;
-    // Plane defined by normal (0,1,0) and constant 0
-    const planeNormal = new THREE.Vector3(0, 1, 0);
-    const planeConstant = 0;
-    const plane = new THREE.Plane(planeNormal, planeConstant);
-    const target = new THREE.Vector3();
-    
-    raycaster.intersectPlane(plane, target);
-    
-    if (target) {
-      const constrained = constrainToPerimeter(target.x, target.z);
-      meshRef.current.position.x = constrained.x;
-      meshRef.current.position.z = constrained.z;
-    }
   };
   
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
@@ -137,7 +137,7 @@ export default function DraggablePost({
       onPointerMove={handlePointerMove}
       onClick={handleClick}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
-      onPointerOut={() => { setHovered(false); setIsDragging(false); onDragEnd?.(); }}
+      onPointerOut={() => { setHovered(false); }}
     >
       <boxGeometry args={[postSize, height, postSize]} />
       <meshStandardMaterial 

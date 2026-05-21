@@ -90,16 +90,27 @@ export default function DropZone({ selectedType, onElementPlaced, carportWidth, 
     }
     
     e.stopPropagation();
-    const point = e.point;
+    
+    // Transform ray to the local space of the parent group (rotated carport group)
+    const localPoint = new THREE.Vector3();
+    if (planeRef.current && planeRef.current.parent) {
+      const parent = planeRef.current.parent;
+      const localRay = e.ray.clone().applyMatrix4(parent.matrixWorld.clone().invert());
+      // In local coordinates of the parent group, the ground plane is Y=0
+      const localPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      localRay.intersectPlane(localPlane, localPoint);
+    } else {
+      localPoint.copy(e.point);
+    }
     
     if (selectedType === 'post') {
-      const constrained = constrainToPerimeter(point.x, point.z);
+      const constrained = constrainToPerimeter(localPoint.x, localPoint.z);
       const snappedX = snapToGrid(constrained.x);
       const snappedZ = snapToGrid(constrained.z);
       setPreviewPos([snappedX, carportHeight / 2, snappedZ]);
       setNearestPosts(null);
     } else if (selectedType.startsWith('panel')) {
-      const postPair = findNearestPostPair(point.x, point.z);
+      const postPair = findNearestPostPair(localPoint.x, localPoint.z);
       if (postPair) {
         const [p1, p2] = postPair;
         const midX = (p1.x + p2.x) / 2;

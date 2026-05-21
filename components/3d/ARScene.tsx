@@ -140,7 +140,9 @@ function PlacedCarport({ position }: { position: THREE.Vector3 }) {
     <group position={position}>
       <ambientLight intensity={1.2} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
-      <Carport config={config} selectedType={null} />
+      <group rotation={[THREE.MathUtils.degToRad(config.rotationX || 0), 0, 0]}>
+        <Carport config={config} selectedType={null} />
+      </group>
     </group>
   );
 }
@@ -166,6 +168,9 @@ function DragHitTestReticle({ onMove }: { onMove: (position: THREE.Vector3) => v
 
 // ─── AR Scene Content (inside XR context) ───────────────────────────────────
 function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: string) => void }) {
+  const config = useCarportStore((state) => state.config);
+  const setRotationX = useCarportStore((state) => state.setRotationX);
+
   const [placedPosition, setPlacedPosition] = useState<THREE.Vector3 | null>(null);
   const [showPlaceHint, setShowPlaceHint] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -321,6 +326,70 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
                 boxSizing: 'border-box',
               }}
             />
+          )}
+
+          {/* Bottom controls panel for X-axis rotation (pitch/tilt) */}
+          {placedPosition && (
+            <div 
+              style={{
+                position: 'absolute',
+                bottom: '24px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'calc(100% - 48px)',
+                maxWidth: '340px',
+                padding: '14px 18px',
+                borderRadius: '16px',
+                background: 'rgba(10, 10, 20, 0.75)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                pointerEvents: 'auto',
+                zIndex: 100000,
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerMove={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.025em' }}>
+                  📐 Pochylenie wiaty (Oś X)
+                </span>
+                <span style={{ color: '#818cf8', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {config.rotationX || 0}°
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-45"
+                max="45"
+                step="1"
+                value={config.rotationX || 0}
+                onChange={(e) => setRotationX(parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  height: '6px',
+                  borderRadius: '3px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  outline: 'none',
+                  WebkitAppearance: 'none',
+                  cursor: 'pointer',
+                  accentColor: '#6366f1',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.7rem' }}>
+                <span>-45°</span>
+                <span>0°</span>
+                <span>+45°</span>
+              </div>
+            </div>
           )}
         </XRDomOverlay>
       </IfInSessionMode>

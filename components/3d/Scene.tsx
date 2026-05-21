@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { useCarportStore } from '@/store/carportStore';
 import { DraggableElementType } from '@/types/carport';
+import * as THREE from 'three';
 import Carport from './Carport';
 import DropZone from './DropZone';
 
@@ -59,23 +60,26 @@ function SceneContent({ selectedType, onElementPlaced, setControlsEnabled, onCle
         followCamera={false}
       />
       
-      {/* Drop zone for click-to-place */}
-      <DropZone
-        selectedType={selectedType}
-        onElementPlaced={onElementPlaced}
-        carportWidth={config.width}
-        carportDepth={config.depth}
-        carportHeight={config.height}
-      />
-      
-      {/* Carport model with drag handlers */}
-      <Carport 
-        config={config} 
-        onDragStart={() => setControlsEnabled(false)}
-        onDragEnd={() => setControlsEnabled(true)}
-        selectedType={selectedType}
-        onClearSelection={onClearSelection}
-      />
+      {/* Rotatable Carport group */}
+      <group rotation={[THREE.MathUtils.degToRad(config.rotationX || 0), 0, 0]}>
+        {/* Drop zone for click-to-place */}
+        <DropZone
+          selectedType={selectedType}
+          onElementPlaced={onElementPlaced}
+          carportWidth={config.width}
+          carportDepth={config.depth}
+          carportHeight={config.height}
+        />
+        
+        {/* Carport model with drag handlers */}
+        <Carport 
+          config={config} 
+          onDragStart={() => setControlsEnabled(false)}
+          onDragEnd={() => setControlsEnabled(true)}
+          selectedType={selectedType}
+          onClearSelection={onClearSelection}
+        />
+      </group>
       
       {/* Camera controls - managed by parent state */}
     </>

@@ -67,6 +67,9 @@ export interface CarportConfig {
   // Custom placed elements (drag & drop)
   customPosts: CustomPost[];
   customPanels: CustomPanel[];
+
+  // Rotation
+  rotationX: number; // in degrees
 }
 
 // Available colors (RAL colors) - lightened for better visibility
@@ -105,4 +108,5 @@ export const DEFAULT_CONFIG: CarportConfig = {
   },
   customPosts: [],
   customPanels: [],
+  rotationX: 0,
 };
