@@ -89,9 +89,15 @@ class ARErrorBoundary extends Component<{ children: ReactNode; onError: (msg: st
 }
 
 // ─── Hit Test Reticle ───────────────────────────────────────────────────────
-function HitTestReticle({ onPlace }: { onPlace: (position: THREE.Vector3) => void }) {
+interface HitTestReticleProps {
+  onPlace: () => void;
+  config: any;
+  reticlePositionRef: React.MutableRefObject<THREE.Vector3>;
+  onHitDetected: () => void;
+}
+
+function HitTestReticle({ onPlace, config, reticlePositionRef, onHitDetected }: HitTestReticleProps) {
   const reticleRef = useRef<THREE.Group>(null);
-  const currentPos = useRef<THREE.Vector3>(new THREE.Vector3());
   const hasHit = useRef(false);
 
   try {
@@ -102,8 +108,12 @@ function HitTestReticle({ onPlace }: { onPlace: (position: THREE.Vector3) => voi
         hitPosition.setFromMatrixPosition(matrixHelper);
         reticleRef.current.visible = true;
         reticleRef.current.position.copy(hitPosition);
-        currentPos.current.copy(hitPosition);
-        hasHit.current = true;
+        reticlePositionRef.current.copy(hitPosition);
+        
+        if (!hasHit.current) {
+          hasHit.current = true;
+          onHitDetected();
+        }
       } catch (e: any) {
         logError('Hit test callback: ' + e.message);
       }
@@ -114,19 +124,23 @@ function HitTestReticle({ onPlace }: { onPlace: (position: THREE.Vector3) => voi
 
   return (
     <group ref={reticleRef} visible={false}>
+      {/* Blue ring */}
       <mesh rotation-x={-Math.PI / 2}>
         <ringGeometry args={[0.08, 0.12, 32]} />
         <meshBasicMaterial color="#6366f1" side={THREE.DoubleSide} opacity={0.8} transparent />
       </mesh>
+      
+      {/* Preview Carport model */}
+      <group rotation={[0, THREE.MathUtils.degToRad(config.rotationY || 0), 0]}>
+        <Carport config={config} selectedType={null} />
+      </group>
+      
+      {/* Click target */}
       <mesh
         rotation-x={-Math.PI / 2}
-        onClick={() => {
-          if (hasHit.current) {
-            onPlace(currentPos.current.clone());
-          }
-        }}
+        onClick={onPlace}
       >
-        <planeGeometry args={[0.5, 0.5]} />
+        <planeGeometry args={[1.5, 1.5]} />
         <meshBasicMaterial visible={false} />
       </mesh>
     </group>
@@ -147,25 +161,6 @@ function PlacedCarport({ position }: { position: THREE.Vector3 }) {
   );
 }
 
-// ─── Hit Test Reticle for Dragging ──────────────────────────────────────────
-function DragHitTestReticle({ onMove }: { onMove: (position: THREE.Vector3) => void }) {
-  try {
-    useXRHitTest((results, getWorldMatrix) => {
-      try {
-        if (results.length === 0) return;
-        getWorldMatrix(matrixHelper, results[0]);
-        hitPosition.setFromMatrixPosition(matrixHelper);
-        onMove(hitPosition.clone());
-      } catch (e: any) {
-        logError('Drag hit test: ' + e.message);
-      }
-    }, 'viewer');
-  } catch (e: any) {
-    logError('DragHitTestReticle setup: ' + e.message);
-  }
-  return null;
-}
-
 // ─── AR Scene Content (inside XR context) ───────────────────────────────────
 function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: string) => void }) {
   const config = useCarportStore((state) => state.config);
@@ -173,70 +168,33 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
 
   const [placedPosition, setPlacedPosition] = useState<THREE.Vector3 | null>(null);
   const [showPlaceHint, setShowPlaceHint] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [hasHitSurface, setHasHitSurface] = useState(false);
+  
+  const reticlePositionRef = useRef<THREE.Vector3>(new THREE.Vector3());
 
-  const handlePlace = useCallback((position: THREE.Vector3) => {
-    setPlacedPosition(position);
-    setShowPlaceHint(false);
-    onLog('Wiata umieszczona na pozycji: ' + position.toArray().map(v => v.toFixed(2)).join(', '));
+  const handlePlace = useCallback(() => {
+    if (reticlePositionRef.current.lengthSq() > 0) {
+      setPlacedPosition(reticlePositionRef.current.clone());
+      setShowPlaceHint(false);
+      onLog('Wiata umieszczona na pozycji: ' + reticlePositionRef.current.toArray().map(v => v.toFixed(2)).join(', '));
+    }
   }, [onLog]);
 
-  const handleDragMove = useCallback((position: THREE.Vector3) => {
-    if (isDragging) {
-      setPlacedPosition(position);
-    }
-  }, [isDragging]);
+  const handleHitDetected = useCallback(() => {
+    setHasHitSurface(true);
+  }, []);
 
-  // Touch handlers for drag
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!placedPosition) return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-    // Start drag after 300ms hold
-    dragTimerRef.current = setTimeout(() => {
-      setIsDragging(true);
-      onLog('Tryb przesuwania aktywny');
-    }, 300);
-  }, [placedPosition, onLog]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const touch = e.touches[0];
-    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
-    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-    // If finger moved more than 10px before timer fires, cancel
-    if (!isDragging && (dx > 10 || dy > 10)) {
-      if (dragTimerRef.current) {
-        clearTimeout(dragTimerRef.current);
-        dragTimerRef.current = null;
-      }
-    }
-  }, [isDragging]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (dragTimerRef.current) {
-      clearTimeout(dragTimerRef.current);
-      dragTimerRef.current = null;
-    }
-    if (isDragging) {
-      setIsDragging(false);
-      onLog('Wiata przesunięta');
-    }
-    touchStartRef.current = null;
-  }, [isDragging, onLog]);
-
-  // Auto-place fallback after 6s
+  // Auto-place fallback after 8s
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!placedPosition) {
         const fallback = new THREE.Vector3(0, 0, -3);
         setPlacedPosition(fallback);
         setShowPlaceHint(false);
-        onLog('Auto-placement (brak hit-test po 6s)');
+        setHasHitSurface(true);
+        onLog('Auto-placement (brak hit-test po 8s)');
       }
-    }, 6000);
+    }, 8000);
     return () => clearTimeout(timer);
   }, [placedPosition, onLog]);
 
@@ -246,9 +204,15 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <XROrigin />
 
-      {!placedPosition && <HitTestReticle onPlace={handlePlace} />}
+      {!placedPosition && (
+        <HitTestReticle 
+          onPlace={handlePlace} 
+          config={config} 
+          reticlePositionRef={reticlePositionRef}
+          onHitDetected={handleHitDetected}
+        />
+      )}
       {placedPosition && <PlacedCarport position={placedPosition} />}
-      {isDragging && <DragHitTestReticle onMove={handleDragMove} />}
 
       {/* DOM Overlay inside AR session */}
       <IfInSessionMode allow="immersive-ar">
@@ -267,9 +231,9 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
             padding: '16px',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             pointerEvents: 'none',
-            zIndex: 100, // Make sure it is above the drag overlay
+            zIndex: 100,
           }}>
             <button
               onClick={onExitAR}
@@ -290,11 +254,37 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
             >
               ✕ Zamknij AR
             </button>
+            
+            {placedPosition && (
+              <button
+                onClick={() => {
+                  setPlacedPosition(null);
+                  setHasHitSurface(false);
+                  reticlePositionRef.current.set(0, 0, 0);
+                  onLog('Tryb pozycjonowania wiaty');
+                }}
+                style={{
+                  pointerEvents: 'auto',
+                  padding: '12px 24px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+                }}
+              >
+                🔄 Zmień położenie
+              </button>
+            )}
+
             <div style={{
               pointerEvents: 'none',
               padding: '10px 20px',
               borderRadius: '12px',
-              background: showPlaceHint ? 'rgba(0,0,0,0.7)' : isDragging ? 'rgba(99,102,241,0.85)' : 'rgba(16,185,129,0.8)',
+              background: !placedPosition ? 'rgba(0,0,0,0.7)' : 'rgba(16,185,129,0.8)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               color: 'white',
@@ -302,32 +292,58 @@ function ARContent({ onExitAR, onLog }: { onExitAR: () => void; onLog: (msg: str
               textAlign: 'center',
               maxWidth: '220px',
             }}>
-              {showPlaceHint
-                ? 'Skieruj kamerę na podłogę i dotknij'
-                : isDragging
-                  ? '✋ Przesuwanie...'
-                  : '✓ Przytrzymaj wiatę, by przenieść'}
+              {!placedPosition
+                ? 'Skieruj kamerę na podłogę i zatwierdź'
+                : '✓ Wiata umieszczona w przestrzeni'}
             </div>
           </div>
 
-          {/* Transparent drag overlay — covers the whole screen to capture touch */}
-          {placedPosition && (
-            <div
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+          {/* Bottom controls panel for placement confirmation */}
+          {!placedPosition && (
+            <div 
               style={{
                 position: 'absolute',
-                inset: 0,
+                bottom: '36px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'calc(100% - 48px)',
+                maxWidth: '340px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px',
                 pointerEvents: 'auto',
-                zIndex: 10, // Rendered below top and bottom overlay components
-                // Visual feedback when dragging
-                border: isDragging ? '3px solid rgba(99,102,241,0.6)' : '3px solid transparent',
-                borderRadius: '0px',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
+                zIndex: 100000,
               }}
-            />
+            >
+              <button
+                disabled={!hasHitSurface}
+                onClick={handlePlace}
+                style={{
+                  width: '100%',
+                  padding: '16px 24px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: hasHitSurface 
+                    ? 'linear-gradient(135deg, #10b981, #059669)' 
+                    : 'rgba(255, 255, 255, 0.1)', 
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  color: hasHitSurface ? 'white' : '#94a3b8',
+                  fontSize: '1.1rem',
+                  fontWeight: 800,
+                  cursor: hasHitSurface ? 'pointer' : 'not-allowed',
+                  boxShadow: hasHitSurface ? '0 8px 32px rgba(16,185,129,0.3)' : 'none',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {hasHitSurface ? '📍 Zatwierdź położenie' : '🔍 Szukanie podłogi...'}
+              </button>
+            </div>
           )}
 
           {/* Bottom controls panel for Y-axis rotation (yaw/horizontal) */}
